@@ -309,24 +309,26 @@ class ConsistencyChecks( object ):
 
   def checkFC2SE( self ):
     #non zero prodID
-    if self.prod:
-      processedLFNs, nonProcessedLFNs, nonProcessedStatuses = self._getTSFiles
+    if self.prod and not self.lfns:
+      gLogger.always( 'Getting files from the TransformationSystem...' )
+      startTime = time.time()
+      processedLFNs, nonProcessedLFNs, statuses = self._getTSFiles()  
       gLogger.always( 'Found %d processed files and %d non processed%s files (%.1f seconds)' %
                       ( len( processedLFNs ),
                         len( nonProcessedLFNs ),
                         ' (%s)' % ','.join( statuses ) if statuses else '',
                         ( time.time() - startTime ) ) )
-      repDict = self.compareChecksum( ?????? )
-    else:
-      if self.lfns:  
-        repDict = self.compareChecksum( self.lfns )
-      if not repDict['OK']:
-        gLogger.error( "Error when comparing checksum", repDict['Message'] )
-        return
+      self.lfns = processedLFNs + nonProcessedLFNs
+      
+    repDict = self.compareChecksum( self.lfns )
+    if not repDict['OK']:
+      gLogger.error( "Error when comparing checksum", repDict['Message'] )
+      return
     repDict = repDict['Value']
     self.existLFNsNoSE = repDict['MissingPFN']
     self.existLFNsBadReplicas = repDict['SomeReplicasCorrupted']
     self.existLFNsBadFiles = repDict['AllReplicasCorrupted']
+
 
   def compareChecksum( self, lfns ):
     """compare the checksum of the file in the FC and the checksum of the physical replicas.
