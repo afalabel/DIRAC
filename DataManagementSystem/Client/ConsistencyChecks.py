@@ -308,7 +308,10 @@ class ConsistencyChecks( object ):
   ################################################################################
 
   def checkFC2SE( self ):
-    #non zero prodID
+    """
+    Consistency between file catalog and SE. To be used either given a prod ID or an LFN list but not
+    both
+    """
     if self.prod and not self.lfns:
       gLogger.always( 'Getting files from the TransformationSystem...' )
       startTime = time.time()
@@ -397,6 +400,7 @@ class ConsistencyChecks( object ):
       for surlChunk in breakListIntoChunks( seFiles[se], chunkSize ):
         self.__write( '.' )
         surlRes = oSe.getFileMetadata( surlChunk )
+        print "surlRes ",surlRes
         if not surlRes[ 'OK' ]:
           gLogger.error( "error StorageElement.getFileMetadata returns %s" % ( surlRes['Message'] ) )
           return surlRes
