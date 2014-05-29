@@ -101,7 +101,20 @@ class UtilitiesTestCase( unittest.TestCase ):
                                                                                                      'NumberOfLinks': 1,
                                                                                                      'Size': 3145788944,
                                                                                                      'Status': '-'}}}}
-
+    StorageElement = Mock()
+    oSe = StorageElement("CERN-RAW")
+    oSe.getFileMetadata.return_value={'OK': True, 
+                                      'Value': {'Successful': 
+                                               {'srm://a_surl':{'Migrated': 0,
+                                                                'Unavailable': 0,
+                                                                'Lost': 0,
+                                                                'Cached': 1,
+                                                                'Checksum': '91324a09',
+                                                                'Mode': 436,
+                                                                'File': True,
+                                                                'Directory': False,
+                                                                'Size': 3145788944}},
+                                                'Failed': {}}}
 
      
   def test_checkFC2SE_giveProdID(self):
