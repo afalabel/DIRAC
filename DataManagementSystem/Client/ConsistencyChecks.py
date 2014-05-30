@@ -303,6 +303,216 @@ class ConsistencyChecks( object ):
         return directories
     else:
       raise RuntimeError( "Need to specify either the directories or a production id" )
+  ################################################################################
+  
+    def getDescendants( self, lfns, status = '' ):
+      """ get the descendants of a list of LFN (for the production)
+      """
+      if type( lfns ) == type( '' ):
+        lfns = [lfns]
+      elif type( lfns ) == type( {} ):
+        lfns = lfns.keys()
+      filesWithDescendants = {}
+      filesWithoutDescendants = {}
+      filesWithMultipleDescendants = {}
+      fileTypesExcluded = Operations().getValue( 'DataConsistency/IgnoreDescendantsOfType', [] )
+      inFCNotInTS = []
+      inTSNotInFC = []
+      allDaughters = []
+      removedFiles = []
+      allDaughters = []
+      removedFiles = []
+      if not lfns:
+        return filesWithDescendants, filesWithoutDescendants, filesWithMultipleDescendants, \
+          allDaughters, removedFiles
+  
+      daughtersBKInfo = self.__getDaughtersInfo( lfns, status, filesWithDescendants, filesWithoutDescendants, filesWithMultipleDescendants )
+  
+      # This is the list of all daughters, sets will contain unique entries
+      setAllDaughters = set( daughtersBKInfo )
+      allDaughters = list( setAllDaughters )
+      inBK = set( [lfn for lfn in setAllDaughters if daughtersBKInfo[lfn][0]] )
+      setRealDaughters = set()
+      # Now check whether these daughters files have replicas or have descendants that have replicas
+      chunkSize = 100 if self.transType == 'DataStripping' and len( self.fileType ) > 1 else 500
+      if filesWithDescendants:
+        # First check in LFC the presence of daughters
+        if not self.noLFC:
+          present, notPresent = self.getReplicasPresenceFromDirectoryScan( allDaughters ) \
+                                  if len( allDaughters ) > 10 * chunkSize and \
+                                     len( inBK ) < len( allDaughters ) / 2 else \
+                                self.getReplicasPresence( allDaughters )
+          setPresent = set( present )
+          setNotPresent = set( notPresent )
+        else:
+          setPresent = inBK
+          setNotPresent = setAllDaughters - inBK
+  
+        setRealDaughters = setPresent
+        # Now check consistency between BK and FC for daughters
+        inBKNotInFC = list( inBK & setNotPresent )
+        inFCNotInBK = list( setPresent - inBK )
+  
+        # Now check whether the daughters without replica have a descendant
+        if setNotPresent:
+          chunkSize = 500
+          startTime = time.time()
+          self.__write( "Now checking descendants from %d daughters without replicas (chunks of %d) "
+                        % ( len( setNotPresent ), chunkSize ) )
+          # Get existing descendants of notPresent daughters
+          setDaughtersWithDesc = set()
+          for lfnChunk in breakListIntoChunks( list( setNotPresent ), chunkSize ):
+            self.__write( '.' )
+            while True:
+              res = self.bkClient.getFileDescendants( lfnChunk, depth = 99, checkreplica = True )
+              if res['OK']:
+                # Exclude ignored file types, but select any other file type, key is daughters
+                setDaughtersWithDesc.update( self._selectByFileType( res['Value']['WithMetadata'], fileTypes = [''],
+                                                                     fileTypesExcluded = fileTypesExcluded ) )
+                break
+              else:
+                gLogger.error( "\nError getting descendants for %d files, retry"
+                               % len( lfnChunk ), res['Message'] )
+          self.__write( ' (%.1f seconds)\n' % ( time.time() - startTime ) )
+          # print "%d not Present daughters, %d have a descendant" % ( len( notPresent ), len( setDaughtersWithDesc ) )
+  
+          startTime = time.time()
+          chunkSize = 500
+          self.__write( "Now establishing final list of existing descendants for %d mothers (chunks of %d)"
+                        % ( len( filesWithDescendants ), chunkSize ) )
+          i = -1
+          for lfn in set( filesWithDescendants ):
+            verbose = False
+            setDaughters = set( filesWithDescendants[lfn] )
+            i += 1
+            if i % chunkSize == 0:
+              self.__write( '.' )
+            # If all daughters are present, all is easy...
+            daughtersNotPresent = setDaughters & setNotPresent
+            if not daughtersNotPresent:
+              continue
+            if verbose:
+              print '\n\nLFN', lfn
+              print 'Daughters', sorted( filesWithDescendants[lfn] )
+              print 'Not present daughters', sorted( list( daughtersNotPresent ) )
+              # print 'Multiple descendants', filesWithMultipleDescendants.get( lfn )
+            # Only interested in daughters without replica, so if all have one, skip
+  
+            # Some daughters may have a replica though, take them into account
+            daughtersWithReplica = setDaughters & setPresent
+            # and add those without a replica but that have  a descendant with replica
+            realDaughters = list( daughtersWithReplica.union( daughtersNotPresent & setDaughtersWithDesc ) )
+            if verbose:
+              print 'realDaughters', realDaughters
+            # descToCheck: dictionary with key = daughter and value = dictionary of file type counts
+            daughtersDict = dict( [( daughter, {daughter:{'FileType':daughtersBKInfo[daughter][1]}} ) for daughter in realDaughters] )
+            if verbose:
+              print 'daughtersDict', daughtersDict
+            descToCheck = self._getFileTypesCount ( daughtersDict )
+            if verbose:
+              print 'descToCheck', descToCheck
+  
+            # Update the result dictionaries according to the final set of descendants
+            if len( descToCheck ) == 0:
+              # Mother has no descendant
+              gLogger.verbose( '%s has no real descendants' % lfn )
+              filesWithMultipleDescendants.pop( lfn, None )
+              filesWithDescendants.pop( lfn, None )
+              filesWithoutDescendants[lfn] = None
+            else:
+              filesWithDescendants[lfn] = realDaughters
+              setRealDaughters.update( realDaughters )
+              # Count the descendants by file type
+              ft_count = {}
+              for counts in descToCheck.values():
+                for ft in counts:
+                  ft_count[ft] = ft_count.setdefault( ft, 0 ) + counts.get( ft, 0 )
+              if verbose:
+                print 'ft_count', ft_count
+              multi = dict( [( ft, ftc ) for ft, ftc in ft_count.items() if ftc > 1] )
+              if verbose:
+                print 'Multi', multi
+              # Mother has at least one real descendant
+              # Now check whether there are more than one descendant of the same file type
+              if not multi:
+                filesWithMultipleDescendants.pop( lfn, None )
+                prStr = 'single'
+              else:
+                filesWithMultipleDescendants[lfn] = multi
+                prStr = 'multiple'
+              gLogger.verbose( '%s has %s descendants: %s' % ( lfn, prStr, sorted( descToCheck ) ) )
+          self.__write( ' (%.1f seconds)\n' % ( time.time() - startTime ) )
+          startTime = time.time()
+          gLogger.verbose( "Reduced list of descendants in %.1f seconds" % ( time.time() - startTime ) )
+      # print 'Final multiple descendants', filesWithMultipleDescendants
+  
+      # File files without descendants don't exist, not important
+      if filesWithoutDescendants:
+        present, removedFiles = self.getReplicasPresence( filesWithoutDescendants.keys() )
+        filesWithoutDescendants = dict.fromkeys( present )
+      else:
+        removedFiles = []
+  
+      # Remove files with multiple descendants from files with descendants
+      for lfn in filesWithMultipleDescendants:
+        filesWithDescendants.pop( lfn, None )
+      # For files in FC and not in BK, ignore if they are not active
+      if inFCNotInBK:
+        inFCNotInBK = self.getReplicasPresence( inFCNotInBK )[0]
+      return filesWithDescendants, filesWithoutDescendants, filesWithMultipleDescendants, \
+        list( setRealDaughters ), inFCNotInBK, inBKNotInFC, removedFiles
+  
+  ################################################################################
+
+
+  def checkTS2FC( self ):
+    """
+    Consistency between transformation system and file catalog. To be used either given a prod ID
+    """
+    if not self.prod:
+      return S_ERROR( "You need a transformationID" )
+    
+    gLogger.always( 'Getting files from the TransformationSystem...' )
+    startTime = time.time()
+    processedLFNs, nonProcessedLFNs, statuses = self._getTSFiles()
+    gLogger.always( 'Found %d processed files and %d non processed%s files (%.1f seconds)' %
+                  ( len( processedLFNs ),
+                    len( nonProcessedLFNs ),
+                    ' (%s)' % ','.join( statuses ) if statuses else '',
+                    ( time.time() - startTime ) ) )
+    res = self.getDescendants( processedLFNs, status = 'processed' )
+    self.prcdWithDesc = res[0]
+    self.prcdWithoutDesc = res[1]
+    self.prcdWithMultDesc = res[2]
+    self.descForPrcdLFNs = res[3]
+    self.inFCNotInBK = res[4]
+    self.inBKNotInFC = res[5]
+    self.removedFiles = res[6]
+
+    res = self.getDescendants( nonProcessedLFNs, status = 'non-processed' )
+    self.nonPrcdWithDesc = res[0]
+    self.nonPrcdWithoutDesc = res[1]
+    self.nonPrcdWithMultDesc = res[2]
+    self.descForNonPrcdLFNs = res[3]
+
+    if self.prcdWithoutDesc:
+      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those do not have descendants" %
+                       ( self.prod, self.transType, len( processedLFNs ), len( self.prcdWithoutDesc ) ) )
+
+    if self.prcdWithMultDesc:
+      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those have multiple descendants: " %
+                       ( self.prod, self.transType, len( processedLFNs ), len( self.prcdWithMultDesc ) ) )
+
+    if self.nonPrcdWithDesc:
+      gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those have descendants" %
+                       ( self.prod, self.transType, len( nonProcessedLFNs ), len( self.nonPrcdWithDesc ) ) )
+
+    if self.nonPrcdWithMultDesc:
+      gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those have multiple descendants: " %
+                       ( self.prod, self.transType, len( nonProcessedLFNs ), len( self.nonPrcdWithMultDesc ) ) )
+
+
+
 
 
   ################################################################################
