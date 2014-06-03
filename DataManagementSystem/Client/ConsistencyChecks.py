@@ -78,6 +78,12 @@ class ConsistencyChecks( object ):
     self.commonAncestors = {}
     self.multipleDescendants = {}
     self.ancestors = {}
+    
+    #Added for TS2FC  
+    self.ProcessedWithRep = []
+    self.ProcessedWithoutRep = []
+    self.nonProcessedWithRep = []
+    self.nonProcessedWithoutRep = []
 
   ################################################################################
 
@@ -191,7 +197,7 @@ class ConsistencyChecks( object ):
 
   ################################################################################
 
-  def _getTSFiles( self ):
+  def _getTSFiles( self , status = True):
     """ Helper function - get files from the TS
     """
     selectDict = { 'TransformationID': self.prod}
@@ -480,28 +486,24 @@ class ConsistencyChecks( object ):
                     len( nonProcessedLFNs ),
                     ' (%s)' % ','.join( statuses ) if statuses else '',
                     ( time.time() - startTime ) ) )
-    res = self.getDescendants( processedLFNs, status = 'processed' )
-    self.prcdWithDesc = res[0]
-    self.prcdWithoutDesc = res[1]
-    self.prcdWithMultDesc = res[2]
-    self.descForPrcdLFNs = res[3]
-    self.inFCNotInBK = res[4]
-    self.inBKNotInFC = res[5]
-    self.removedFiles = res[6]
+    
+ 
+    res = self.getReplicasPresence( processedLFNs)
+    self.ProcessedWithRep = res[0]
+    self.ProcessedWithoutRep = res[1]
 
-    res = self.getDescendants( nonProcessedLFNs, status = 'non-processed' )
-    self.nonPrcdWithDesc = res[0]
-    self.nonPrcdWithoutDesc = res[1]
-    self.nonPrcdWithMultDesc = res[2]
-    self.descForNonPrcdLFNs = res[3]
+    res = self.getReplicasPresence( nonProcessedLFNs)
+    self.nonProcessedWithRep = res[0]
+    self.nonProcessedWithoutRep = res[1]
+
 
     if self.prcdWithoutDesc:
       gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those do not have descendants" %
-                       ( self.prod, self.transType, len( processedLFNs ), len( self.prcdWithoutDesc ) ) )
+                       ( self.prod, self.transType, len( processedLFNs ), len( self.ProcessedWithoutRep ) ) )
 
     if self.prcdWithMultDesc:
-      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those have multiple descendants: " %
-                       ( self.prod, self.transType, len( processedLFNs ), len( self.prcdWithMultDesc ) ) )
+      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those have descendants: " %
+                       ( self.prod, self.transType, len( processedLFNs ), len( self.ProcessedWithRep ) ) )
 
     if self.nonPrcdWithDesc:
       gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those have descendants" %

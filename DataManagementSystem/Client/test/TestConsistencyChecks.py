@@ -101,33 +101,43 @@ class UtilitiesTestCase( unittest.TestCase ):
                                                                                                      'NumberOfLinks': 1,
                                                                                                      'Size': 3145788944,
                                                                                                      'Status': '-'}}}}
-    StorageElement = Mock()
-    oSe = StorageElement("CERN-RAW")
-    oSe.getFileMetadata.return_value={'OK': True, 
-                                      'Value': {'Successful': 
-                                               {'srm://a_surl':{'Migrated': 0,
-                                                                'Unavailable': 0,
-                                                                'Lost': 0,
-                                                                'Cached': 1,
-                                                                'Checksum': '91324a09',
-                                                                'Mode': 436,
-                                                                'File': True,
-                                                                'Directory': False,
-                                                                'Size': 3145788944}},
-                                                'Failed': {}}}
+# >>> import pprint
+# >>> pprint.pprint(res)
+# {'OK': True,
+#  'Value': {'Failed': {},
+#            'Successful': {'/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/115464/115464_0000000031.raw': {'CERN-RAW': 'srm://srm-lhcb.cern.ch/castor/cern.ch/grid/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/115464/115464_0000000031.raw',
+#                                                                                                      'SARA-RAW': 'srm://srm.grid.sara.nl/pnfs/grid.sara.nl/data/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/115464/115464_0000000031.raw'}}}}
+# >>> res = rm.getReplicas(['/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst'])
+# >>> res
+# {'OK': True, 'Value': {'Successful': {'/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst': {'CNAF-DST': 'srm://storm-fe-lhcb.cr.cnaf.infn.it/disk/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst', 'CERN-DST-EOS': 'srm://srm-eoslhcb.cern.ch/eos/lhcb/grid/prod/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst', 'IN2P3-DST': 'srm://ccsrm.in2p3.fr/pnfs/in2p3.fr/data/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst', 'GRIDKA_M-DST': 'srm://lhcbsrm-kit.gridka.de/pnfs/gridka.de/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst', 'CERN-ARCHIVE': 'srm://srm-lhcb.cern.ch/castor/cern.ch/grid/lhcb/archive/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst'}}, 'Failed': {}}}
+# >>> pprint.pprint(res)
+# {'OK': True,
+#  'Value': {'Failed': {},
+#            'Successful': {'/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst': {'CERN-ARCHIVE': 'srm://srm-lhcb.cern.ch/castor/cern.ch/grid/lhcb/archive/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst',
+#                                                                                                              'CERN-DST-EOS': 'srm://srm-eoslhcb.cern.ch/eos/lhcb/grid/prod/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst',
+#                                                                                                              'CNAF-DST': 'srm://storm-fe-lhcb.cr.cnaf.infn.it/disk/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst',
+#                                                                                                              'GRIDKA_M-DST': 'srm://lhcbsrm-kit.gridka.de/pnfs/gridka.de/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst',
+#                                                                                                              'IN2P3-DST': 'srm://ccsrm.in2p3.fr/pnfs/in2p3.fr/data/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst'}}}}
+
 
      
-  def test_checkFC2SE_giveProdID(self):
+  def test_checkFC2SE_givenProdID(self):
     print "\nTest check given a Production ID"
     self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
     self.cc.prod = 36297
     self.cc.checkFC2SE()
     
-  def test_checkFC2SE_giveLFNlist(self):
+  def test_checkFC2SE_givenLFNlist(self):
     print "\nTest check given an LFN list"
     self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
     self.cc.lfns = ['/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/132545/132545_0000000003.raw','/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/132545/132545_0000000012.raw']
-    self.cc.checkFC2SE()      
+    self.cc.checkFC2SE()     
+    
+  def test_checkTS2FC_givenProdID(self):
+    print "\nTest check given an LFN list"
+    self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
+    self.cc.prod = 36297
+    self.cc.checkTS2FC()      
         
     
     
