@@ -469,7 +469,10 @@ class ConsistencyChecks( object ):
         list( setRealDaughters ), inFCNotInBK, inBKNotInFC, removedFiles
   
   ################################################################################
+  
+  def checkSE2FC( self ): 
 
+  ################################################################################
 
   def checkTS2FC( self ):
     """
@@ -496,22 +499,21 @@ class ConsistencyChecks( object ):
     self.nonProcessedWithRep = res[0]
     self.nonProcessedWithoutRep = res[1]
 
-
-    if self.prcdWithoutDesc:
+    if self.ProcessedWithoutRep:
       gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those do not have descendants" %
                        ( self.prod, self.transType, len( processedLFNs ), len( self.ProcessedWithoutRep ) ) )
 
-    if self.prcdWithMultDesc:
-      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those have descendants: " %
+    if self.ProcessedWithRep:
+      gLogger.verbose( "For transformation %s of type %s, %d files are processed, and %d of those have descendants " %
                        ( self.prod, self.transType, len( processedLFNs ), len( self.ProcessedWithRep ) ) )
 
     if self.nonPrcdWithDesc:
       gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those have descendants" %
                        ( self.prod, self.transType, len( nonProcessedLFNs ), len( self.nonPrcdWithDesc ) ) )
 
-    if self.nonPrcdWithMultDesc:
-      gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those have multiple descendants: " %
-                       ( self.prod, self.transType, len( nonProcessedLFNs ), len( self.nonPrcdWithMultDesc ) ) )
+    if self.nonPrcdWithDesc:
+      gLogger.verbose( "For transformation %s of type %s, %d files are not processed, but %d of those do not have descendants " %
+                       ( self.prod, self.transType, len( nonProcessedLFNs ), len( self.nonPrcdWithDesc ) ) )
 
 
 
@@ -615,7 +617,7 @@ class ConsistencyChecks( object ):
         print "surlRes ",surlRes
         if not surlRes[ 'OK' ]:
           gLogger.error( "error StorageElement.getFileMetadata returns %s" % ( surlRes['Message'] ) )
-          return surlRes
+          continue  #return surlRes # to be discussed
         surlRes = surlRes['Value']
         for surl in surlRes['Failed']:
           lfn = surlLfn[surl]

@@ -1,7 +1,9 @@
 import unittest
-from mock import Mock
+from mock import Mock, patch
 from DIRAC.DataManagementSystem.Client.ConsistencyChecks import ConsistencyChecks
 import datetime
+
+
 
 class UtilitiesTestCase( unittest.TestCase ):
   """ Base class for the Consistency Checks test cases
@@ -101,6 +103,8 @@ class UtilitiesTestCase( unittest.TestCase ):
                                                                                                      'NumberOfLinks': 1,
                                                                                                      'Size': 3145788944,
                                                                                                      'Status': '-'}}}}
+
+    
 # >>> import pprint
 # >>> pprint.pprint(res)
 # {'OK': True,
@@ -120,21 +124,20 @@ class UtilitiesTestCase( unittest.TestCase ):
 #                                                                                                              'IN2P3-DST': 'srm://ccsrm.in2p3.fr/pnfs/in2p3.fr/data/lhcb/LHCb/Collision12/DIMUON.DST/00020350/0001/00020350_00010578_1.dimuon.dst'}}}}
 
 
-     
   def test_checkFC2SE_givenProdID(self):
-    print "\nTest check given a Production ID"
+    print "\nTest check FC2SE given a Production ID"
     self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
     self.cc.prod = 36297
     self.cc.checkFC2SE()
     
   def test_checkFC2SE_givenLFNlist(self):
-    print "\nTest check given an LFN list"
+    print "\nTest check FC2SE given an LFN list"
     self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
     self.cc.lfns = ['/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/132545/132545_0000000003.raw','/lhcb/data/2012/RAW/FULL/LHCb/COLLISION12/132545/132545_0000000012.raw']
     self.cc.checkFC2SE()     
     
   def test_checkTS2FC_givenProdID(self):
-    print "\nTest check given an LFN list"
+    print "\nTest check TS2FC given an LFN list"
     self.cc = ConsistencyChecks( transClient = self.tcMock, dm = self.dmMock )
     self.cc.prod = 36297
     self.cc.checkTS2FC()      
