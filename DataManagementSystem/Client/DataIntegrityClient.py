@@ -60,6 +60,7 @@ class DataIntegrityClient( Client ):
   # This section contains the specific methods for LFC->SE checks
   #
 
+  # TO BE INCLUDED in ConsistencyChecks
   def catalogDirectoryToSE( self, lfnDir ):
     """ This obtains the replica and metadata information from the catalog for the supplied directory and checks against the storage elements.
     """
@@ -101,6 +102,7 @@ class DataIntegrityClient( Client ):
     resDict = {'CatalogMetadata':catalogMetadata, 'CatalogReplicas':replicas}
     return S_OK( resDict )
 
+  # TO BE INCLUDED in ConsistencyChecks
   def checkPhysicalFiles( self, replicas, catalogMetadata, ses = [] ):
     """ This obtains takes the supplied replica and metadata information obtained from the catalog and checks against the storage elements.
     """
@@ -109,6 +111,7 @@ class DataIntegrityClient( Client ):
     gLogger.info( "-" * 40 )
     return self.__checkPhysicalFiles( replicas, catalogMetadata, ses = ses )
 
+  # TO BE INCLUDED in ConsistencyChecks
   def __checkPhysicalFiles( self, replicas, catalogMetadata, ses = [] ):
     """ This obtains the physical file metadata and checks the metadata against the catalog entries
     """
@@ -390,6 +393,7 @@ class DataIntegrityClient( Client ):
   # This section contains the specific methods for obtaining replica and metadata information from the catalog
   #
 
+  # TO BE INCLUDED in ConsistencyChecks PARTIALLY
   def __getCatalogDirectoryContents( self, lfnDir ):
     """ Obtain the contents of the supplied directory
     """
