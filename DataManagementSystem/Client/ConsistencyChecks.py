@@ -6,9 +6,8 @@
     Should be extended to include the Storage (in DIRAC)
 """
 
-import os, copy, ast, time, sys
+import os, copy, time, sys
 
-import DIRAC
 from DIRAC import gLogger, S_ERROR, S_OK
 from DIRAC.Core.Utilities.List import breakListIntoChunks
 from DIRAC.Interfaces.API.Dirac import Dirac
@@ -471,6 +470,7 @@ class ConsistencyChecks( object ):
   ################################################################################
   
   def checkSE2FC( self ): 
+    pass
 
   ################################################################################
 
