@@ -2,8 +2,8 @@
 :mod:  ReqClient
 
 .. module:  ReqClient
+  :synopsis: implementation of client for RequestDB using DISET framework
 
-:synopsis: implementation of client for RequestDB using DISET framework
 """
 # # from DIRAC
 from DIRAC import gLogger, S_OK, S_ERROR
@@ -13,6 +13,8 @@ from DIRAC.ConfigurationSystem.Client import PathFinder
 from DIRAC.Core.Base.Client import Client
 from DIRAC.RequestManagementSystem.Client.Request import Request
 from DIRAC.RequestManagementSystem.private.RequestValidator import RequestValidator
+import datetime
+import os
 
 class ReqClient( Client ):
   """
@@ -28,14 +30,13 @@ class ReqClient( Client ):
   __requestProxiesDict = {}
   __requestValidator = None
 
-  def __init__( self, useCertificates = False ):
+  def __init__( self ):
     """c'tor
 
     :param self: self reference
-    :param bool useCertificates: flag to enable/disable certificates
     """
     Client.__init__( self )
-    self.log = gLogger.getSubLogger( "RequestManagement/ReqClient" )
+    self.log = gLogger.getSubLogger( "RequestManagement/ReqClient/pid_%s" % ( os.getpid() ) )
     self.setServer( "RequestManagement/ReqManager" )
 
   def requestManager( self, timeout = 120 ):
@@ -54,7 +55,7 @@ class ReqClient( Client ):
       proxiesURLs = fromChar( PathFinder.getServiceURL( "RequestManagement/ReqProxyURLs" ) )
       if not proxiesURLs:
         self.log.warn( "CS option RequestManagement/ReqProxyURLs is not set!" )
-      for proxyURL in randomize( proxiesURLs ):
+      for proxyURL in proxiesURLs:
         self.log.debug( "creating RequestProxy for url = %s" % proxyURL )
         self.__requestProxiesDict[proxyURL] = RPCClient( proxyURL, timeout = timeout )
     return self.__requestProxiesDict
@@ -87,7 +88,8 @@ class ReqClient( Client ):
     errorsDict["RequestManager"] = setRequestMgr["Message"]
     self.log.warn( "putRequest: unable to set request '%s' at RequestManager" % request.RequestName )
     proxies = self.requestProxies()
-    for proxyURL, proxyClient in proxies.items():
+    for proxyURL in randomize( proxies.keys() ):
+      proxyClient = proxies[proxyURL]
       self.log.debug( "putRequest: trying RequestProxy at %s" % proxyURL )
       setRequestProxy = proxyClient.putRequest( requestJSON )
       if setRequestProxy["OK"]:
@@ -124,6 +126,30 @@ class ReqClient( Client ):
       return getRequest
     return S_OK( Request( getRequest["Value"] ) )
 
+  def getBulkRequests( self, numberOfRequest = 10 ):
+    """ get bulk requests from RequestDB
+
+    :param self: self reference
+    :param str numberOfRequest: size of the bulk (default 10)
+
+    :return: S_OK( Successful : { requestID, RequestInstance }, Failed : message  ) or S_ERROR
+    """
+    self.log.debug( "getRequests: attempting to get request." )
+    getRequests = self.requestManager().getBulkRequests( numberOfRequest )
+    if not getRequests["OK"]:
+      self.log.error( "getRequests: unable to get '%s' requests: %s" % ( numberOfRequest, getRequests["Message"] ) )
+      return getRequests
+    # No Request returned
+    if not getRequests["Value"]:
+      return getRequests
+    # No successful Request
+    if not getRequests["Value"]["Successful"]:
+      return getRequests
+
+    jsonReq = getRequests["Value"]["Successful"]
+    reqInstances = dict( ( rId, Request( jsonReq[rId] ) ) for rId in jsonReq )
+    return S_OK( {"Successful" : reqInstances, "Failed" : getRequests["Value"]["Failed"] } )
+
   def peekRequest( self, requestName ):
     """ peek request """
     self.log.debug( "peekRequest: attempting to get request." )
@@ -158,11 +184,14 @@ class ReqClient( Client ):
                                                                              deleteRequest["Message"] ) )
     return deleteRequest
 
-  def getRequestNamesList( self, statusList = None, limit = None ):
+  def getRequestNamesList( self, statusList = None, limit = None, since = None, until = None ):
     """ get at most :limit: request names with statuses in :statusList: """
     statusList = statusList if statusList else list( Request.FINAL_STATES )
     limit = limit if limit else 100
-    return self.requestManager().getRequestNamesList( statusList, limit )
+    since = since.strftime( '%Y-%m-%d' ) if since else ""
+    until = until.strftime( '%Y-%m-%d' ) if until else ""
+
+    return self.requestManager().getRequestNamesList( statusList, limit, since, until )
 
   def getScheduledRequest( self, operationID ):
     """ get scheduled request given its scheduled OperationID """
@@ -297,8 +326,8 @@ class ReqClient( Client ):
           stateUpdate = stateServer.setJobStatus( jobID, "Failed", "Requests done", "" )
 
       if not stateUpdate:
-        self.log.info( "finalizeRequest: Updating job minor status for %d to Requests done" % jobID )
-        stateUpdate = stateServer.setJobStatus( jobID, "", "Requests done", "" )
+        self.log.info( "finalizeRequest: Updating job minor status for %d to Requests done (status is %s)" % ( jobID, jobStatus ) )
+        stateUpdate = stateServer.setJobStatus( jobID, jobStatus, "Requests done", "" )
 
       if not stateUpdate["OK"]:
         self.log.error( "finalizeRequest: Failed to set job %d status: %s" % ( jobID, stateUpdate['Message'] ) )
@@ -384,16 +413,22 @@ def prettyPrint( mainItem, key = '', offset = 0 ):
     for key in sorted( mainItem ):
       prettyPrint( mainItem[key], key = key, offset = offset )
     output += "%s%s\n" % ( blanks, '}' ) if blanks else ''
-  elif mainItem and type( mainItem ) == type( [] ):
-    output += "%s%s%s\n" % ( blanks, key, '[' )
+  elif mainItem and type( mainItem ) == type( [] ) or type( mainItem ) == type( tuple() ):
+    output += "%s%s%s\n" % ( blanks, key, '[' if type( mainItem ) == type( [] ) else '(' )
     for item in mainItem:
       prettyPrint( item, offset = offset + 2 )
-    output += "%s%s\n" % ( blanks, ']' )
+    output += "%s%s\n" % ( blanks, ']' if type( mainItem ) == type( [] ) else ')' )
   elif type( mainItem ) == type( '' ):
-    output += "%s%s'%s'\n" % ( blanks, key, str( mainItem ) )
+    if '\n' in mainItem:
+      prettyPrint( mainItem.strip( '\n' ).split( '\n' ), offset = offset )
+    else:
+      output += "%s%s'%s'\n" % ( blanks, key, mainItem )
   else:
     output += "%s%s%s\n" % ( blanks, key, str( mainItem ) )
-  output = output.replace( '[\n%s{' % blanks, '[{' ).replace( '}\n%s]' % blanks, '}]' )
+  output = output.replace( '[\n%s{' % blanks, '[{' ).replace( '}\n%s]' % blanks, '}]' ) \
+                 .replace( '(\n%s{' % blanks, '({' ).replace( '}\n%s)' % blanks, '})' ) \
+                 .replace( '(\n%s(' % blanks, '((' ).replace( ')\n%s)' % blanks, '))' ) \
+                 .replace( '(\n%s[' % blanks, '[' ).replace( ']\n%s)' % blanks, ']' )
 
 def printRequest( request, status = None, full = False, verbose = True, terse = False ):
   from DIRAC.DataManagementSystem.Client.FTSClient                                  import FTSClient
@@ -411,10 +446,9 @@ def printRequest( request, status = None, full = False, verbose = True, terse = 
                                                                      request.Status, " ('%s' in DB)" % status if status != request.Status else '',
                                                                      ( " Error='%s'" % request.Error ) if request.Error and request.Error.strip() else "" ,
                                                                      ( " Job=%s" % request.JobID ) if request.JobID else "" ) )
-    if verbose:
-      gLogger.always( "Created %s, Updated %s" % ( request.CreationTime, request.LastUpdate ) )
-      if request.OwnerDN:
-        gLogger.always( "Owner: '%s', Group: %s" % ( request.OwnerDN, request.OwnerGroup ) )
+    gLogger.always( "Created %s, Updated %s" % ( request.CreationTime, request.LastUpdate ) )
+    if request.OwnerDN:
+      gLogger.always( "Owner: '%s', Group: %s" % ( request.OwnerDN, request.OwnerGroup ) )
     for indexOperation in enumerate( request ):
       op = indexOperation[1]
       if not terse or op.Status == 'Failed':
@@ -428,18 +462,25 @@ def printRequest( request, status = None, full = False, verbose = True, terse = 
                                                                for job in ftsJobs] ) )
 
 def printOperation( indexOperation, verbose = True, onlyFailed = False ):
+  global output
   i, op = indexOperation
   prStr = ''
-  if 'Replicate' in op.Type:
-    anyReplication = True
-  if verbose:
-    if op.SourceSE:
-      prStr += 'SourceSE: %s' % op.SourceSE
-    if op.TargetSE:
-      prStr += ( ' - ' if prStr else '' ) + 'TargetSE: %s' % op.TargetSE
-    if prStr:
-      prStr += ' - '
-    prStr += 'Created %s, Updated %s' % ( op.CreationTime, op.LastUpdate )
+  if op.SourceSE:
+    prStr += 'SourceSE: %s' % op.SourceSE
+  if op.TargetSE:
+    prStr += ( ' - ' if prStr else '' ) + 'TargetSE: %s' % op.TargetSE
+  if prStr:
+    prStr += ' - '
+  prStr += 'Created %s, Updated %s' % ( op.CreationTime, op.LastUpdate )
+  if op.Type == 'ForwardDISET':
+    from DIRAC.Core.Utilities import DEncode
+    decode, _length = DEncode.decode( op.Arguments )
+    if verbose:
+      output = ''
+      prettyPrint( decode, offset = 10 )
+      prStr += '\n      Arguments:\n' + output.strip( '\n' )
+    else:
+      prStr += '\n      Service: %s' % decode[0][0]
   gLogger.always( "  [%s] Operation Type='%s' ID=%s Order=%s Status='%s'%s%s" % ( i, op.Type, op.OperationID,
                                                                                        op.Order, op.Status,
                                                                                        ( " Error='%s'" % op.Error ) if op.Error and op.Error.strip() else "",
@@ -460,7 +501,7 @@ def recoverableRequest( request ):
   excludedErrors = ( 'File does not exist', 'No such file or directory',
                      'sourceSURL equals to targetSURL',
                      'Max attempts limit reached', 'Max attempts reached' )
-  operationErrorsOK = ( 'is banned for', )
+  operationErrorsOK = ( 'is banned for', 'Failed to perform exists from any catalog' )
   for op in request:
     if op.Status == 'Failed' and ( not op.Error or not [errStr for errStr in operationErrorsOK if errStr in op.Error] ):
       for f in op:

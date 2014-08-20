@@ -4,12 +4,11 @@
 # Author: Krzysztof.Ciba@NOSPAMgmail.com
 # Date: 2012/08/03 15:02:53
 ########################################################################
-""" 
+"""
 :mod: File
 
 .. module: File
-
-:synopsis: RMS operation file
+  :synopsis: RMS operation file
 
 .. moduleauthor:: Krzysztof.Ciba@NOSPAMgmail.com
 
@@ -84,7 +83,7 @@ class File( Record ):
                "ChecksumType" : "ENUM('ADLER32', 'MD5', 'SHA1', '') DEFAULT ''",
                "Checksum" : "VARCHAR(255)",
                "GUID" : "VARCHAR(36)",
-               "Size" : "INTEGER",
+               "Size" : "BIGINT",
                "Attempt": "INTEGER",
                "Error" : "VARCHAR(255)" },
              "PrimaryKey" : "FileID",
@@ -232,7 +231,7 @@ class File( Record ):
     if value not in ( "Waiting", "Failed", "Done", "Scheduled" ):
       raise ValueError( "Unknown Status: %s!" % str( value ) )
     if value == 'Done':
-      self.__data__['Error'] = ''
+      self.Error = ' '
     self.__data__["Status"] = value
     if self._parent:
       self._parent._notify()

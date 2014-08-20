@@ -3,16 +3,15 @@
 # Author: Krzysztof.Ciba@NOSPAMgmail.com
 # Date: 2013/04/08 14:24:08
 ########################################################################
-""" 
+"""
 :mod: FTSManagerHandler
 
 .. module: FTSManagerHandler
-
-:synopsis: handler for FTSDB using DISET
+  :synopsis: handler for FTSDB using DISET
 
 .. moduleauthor:: Krzysztof.Ciba@NOSPAMgmail.com
 
-service handler for FTSDB using DISET
+Service handler for FTSDB using DISET
 """
 
 # #
@@ -406,6 +405,28 @@ class FTSManagerHandler( RequestHandler ):
     try:
       requestID = int( requestID )
       ftsFiles = self.ftsDB.getFTSFilesForRequest( requestID, statusList )
+      if not ftsFiles['OK']:
+        gLogger.error( "getFTSFilesForRequest: %s" % ftsFiles['Message'] )
+        return ftsFiles
+      ftsFilesList = []
+      for ftsFile in ftsFiles['Value']:
+        ftsFileJSON = ftsFile.toJSON()
+        if not ftsFileJSON['OK']:
+          gLogger.error( "getFTSFilesForRequest: %s" % ftsFileJSON['Message'] )
+          return ftsFileJSON
+        ftsFilesList.append( ftsFileJSON['Value'] )
+      return S_OK( ftsFilesList )
+    except Exception, error:
+      gLogger.exception( str( error ) )
+      return S_ERROR( str( error ) )
+
+  types_getAllFTSFilesForRequest = [ ( IntType, LongType ) ]
+  @classmethod
+  def export_getAllFTSFilesForRequest( self, requestID ):
+    """ get list of FTSFiles with statuses in :statusList: given :requestID: """
+    try:
+      requestID = int( requestID )
+      ftsFiles = self.ftsDB.getAllFTSFilesForRequest( requestID )
       if not ftsFiles['OK']:
         gLogger.error( "getFTSFilesForRequest: %s" % ftsFiles['Message'] )
         return ftsFiles

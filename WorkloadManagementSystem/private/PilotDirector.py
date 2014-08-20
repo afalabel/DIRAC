@@ -15,17 +15,18 @@
   This means that DIRAC direct submission to Grid CE's (CREAM, ...) will be handled by DIRAC Pilot
   Director making use of a DIRAC CREAM Computing Element class
 """
-__RCSID__ = "$Id$"
 
+__RCSID__ = "$Id$"
 
 import os, random
 random.seed()
-
 
 import DIRAC
 # Some reasonable Defaults
 DIRAC_PILOT = os.path.join( DIRAC.rootPath, 'DIRAC', 'WorkloadManagementSystem', 'PilotAgent', 'dirac-pilot.py' )
 DIRAC_INSTALL = os.path.join( DIRAC.rootPath, 'DIRAC', 'Core', 'scripts', 'dirac-install.py' )
+DIRAC_MODULES = [ os.path.join( DIRAC.rootPath, 'DIRAC', 'WorkloadManagementSystem', 'PilotAgent', 'pilotCommands.py' ),
+                  os.path.join( DIRAC.rootPath, 'DIRAC', 'WorkloadManagementSystem', 'PilotAgent', 'pilotTools.py' ) ]
 DIRAC_VERSION = 'Integration'
 DIRAC_PROJECT = ''
 DIRAC_INSTALLATION = ''
@@ -70,10 +71,11 @@ class PilotDirector:
           that must call the parent class __init__ method and then do its own initialization
       * configure( self, csSection, submitPool ):
           that must call the parent class configure method and the do its own configuration
-      * _submitPilots( self, workDir, taskQueueDict, pilotOptions, pilotsToSubmit, ceMask,
+      * _submitPilot( self, workDir, taskQueueDict, pilotOptions, pilotsToSubmit, ceMask,
                       submitPrivatePilot, privateTQ, proxy, pilotsPerJob )
-          actual method doing the submission to the backend once the submitPilots method
-          has prepared the common part
+      * _listMatch( self, proxy, jdl, taskQueueID, rb )
+      * _getChildrenReferences( self, proxy, parentReference, taskQueueID )
+
 
     Derived classes might implement:
       * configureFromSection( self, mySection ):
@@ -106,6 +108,7 @@ class PilotDirector:
 
     self.virtualOrganization = VIRTUAL_ORGANIZATION
     self.install = DIRAC_INSTALL
+    self.extraModules = DIRAC_MODULES
     self.maxJobsInFillMode = MAX_JOBS_IN_FILLMODE
     self.targetGrids = [ self.gridMiddleware ]
 
@@ -146,6 +149,7 @@ class PilotDirector:
     self.log.info( ' Target Grids:   ', ', '.join( self.targetGrids ) )
     self.log.info( ' Install script: ', self.install )
     self.log.info( ' Pilot script:   ', self.pilot )
+    self.log.info( ' Pilot modules', self.extraModules )
     self.log.info( ' Install Ver:    ', self.installVersion )
     if self.installProject:
       self.log.info( ' Project:        ', self.installProject )
@@ -180,6 +184,7 @@ class PilotDirector:
     self.installVersion = gConfig.getValue( mySection + '/Version'         , self.installVersion )
     self.extraPilotOptions = gConfig.getValue( mySection + '/ExtraPilotOptions'    , self.extraPilotOptions )
     self.install = gConfig.getValue( mySection + '/InstallScript'        , self.install )
+    self.extraModules = gConfig.getValue( mySection + '/ExtraPilotModules'        , [] ) + self.extraModules
     self.installProject = gConfig.getValue( mySection + '/Project'        , self.installProject )
     self.installation = gConfig.getValue( mySection + '/Installation'        , self.installation )
     self.maxJobsInFillMode = gConfig.getValue( mySection + '/MaxJobsInFillMode'    , self.maxJobsInFillMode )
@@ -371,8 +376,8 @@ class PilotDirector:
 
     return S_OK( ( pilotOptions, pilotsToSubmit, ownerDN, ownerGroup, submitPrivatePilot, privateTQ ) )
 
-  def _submitPilots( self, workDir, taskQueueDict, pilotOptions, pilotsToSubmit,
-                     ceMask, submitPrivatePilot, privateTQ, proxy, pilotsPerJob ):
+  def _submitPilot( self, workDir, taskQueueDict, pilotOptions, pilotsToSubmit,
+                    ceMask, submitPrivatePilot, privateTQ, proxy, pilotsPerJob ):
     """
       This method must be implemented on the Backend specific derived class.
       This is problem with the Director, not with the Job so we must return S_OK
@@ -381,6 +386,17 @@ class PilotDirector:
     self.log.error( '_submitPilots method not implemented' )
     return S_OK()
 
+  def _listMatch( self, proxy, jdl, taskQueueID, rb ):
+    """ This method must be implemented on the Backend specific derived class.
+    """
+    self.log.error( '_listMatch method not implemented' )
+    return S_OK()
+
+  def _getChildrenReferences( self, proxy, parentReference, taskQueueID ):
+    """ This method must be implemented on the Backend specific derived class.
+    """
+    self.log.error( '_getChildrenReferences method not implemented' )
+    return S_OK()
 
   def submitPilots( self, taskQueueDict, pilotsToSubmit, workDir = None ):
     """

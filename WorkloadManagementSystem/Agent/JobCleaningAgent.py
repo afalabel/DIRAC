@@ -7,6 +7,8 @@
 The Job Cleaning Agent controls removing jobs from the WMS in the end of their life cycle.
 """
 
+__RCSID__ = "$Id$"
+
 from DIRAC                                                     import S_OK, gLogger
 from DIRAC.Core.Base.AgentModule                               import AgentModule
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations       import Operations
@@ -21,9 +23,10 @@ from DIRAC.RequestManagementSystem.Client.ReqClient            import ReqClient
 
 import DIRAC.Core.Utilities.Time as Time
 
-import string
 import time
 import os
+
+
 
 REMOVE_STATUS_DELAY = { 'Done':7,
                         'Killed':1,
@@ -55,10 +58,10 @@ class JobCleaningAgent( AgentModule ):
       self.prod_types = agentTSTypes
     else:
       self.prod_types = Operations().getValue( 'Transformations/DataProcessing', ['MCSimulation', 'Merge'] )
-    gLogger.info('Will exclude the following Production types from cleaning %s'%(string.join(self.prod_types,', ')))
-    self.maxJobsAtOnce = self.am_getOption('MaxJobsAtOnce',100)
-    self.jobByJob = self.am_getOption('JobByJob',True)
-    self.throttlingPeriod = self.am_getOption('ThrottlingPeriod',0.)
+    gLogger.info('Will exclude the following Production types from cleaning %s' % ( ', '.join(self.prod_types) ) )
+    self.maxJobsAtOnce = self.am_getOption('MaxJobsAtOnce', 100)
+    self.jobByJob = self.am_getOption('JobByJob', True)
+    self.throttlingPeriod = self.am_getOption('ThrottlingPeriod', 0.)
     return S_OK()
 
   def __getAllowedJobTypes( self ):
@@ -85,6 +88,11 @@ class JobCleaningAgent( AgentModule ):
     result = self.__getAllowedJobTypes()
     if not result[ 'OK' ]:
       return result
+    
+    # No jobs in the system subject to removal
+    if not result['Value']:
+      return S_OK()
+    
     baseCond = { 'JobType' : result[ 'Value' ] }
     # Remove jobs with final status
     for status in REMOVE_STATUS_DELAY:

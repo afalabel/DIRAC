@@ -5,56 +5,51 @@
 ########################################################################
 
 """
-Collection of Tools for installation of DIRAC components: MySQL, DB's, Services's, Agents
+Collection of Tools for installation of DIRAC components: 
+MySQL, DB's, Services's, Agents
 
 It only makes use of defaults in LocalInstallation Section in dirac.cfg
 
 The Following Options are used:
 
-/DIRAC/Setup:             Setup to be used for any operation
-
-/LocalInstallation/InstanceName:    Name of the Instance for the current Setup (default /DIRAC/Setup)
-/LocalInstallation/LogLevel:        LogLevel set in "run" script for all components installed
-/LocalInstallation/RootPath:        Used instead of rootPath in "run" script if defined (if links are used to named versions)
-/LocalInstallation/InstancePath:    Location where runit and startup directories are created (default rootPath)
-/LocalInstallation/UseVersionsDir:  DIRAC is installed under versions/<Versioned Directory> with a link from pro
-                                    
-                                    (This option overwrites RootPath and InstancePath)
-                                    
-/LocalInstallation/Host:            Used when build the URL to be published for the installed service (default: socket.getfqdn())
-/LocalInstallation/RunitDir:        Location where runit directory is created (default InstancePath/runit)
-/LocalInstallation/StartupDir:      Location where startup directory is created (default InstancePath/startup)
-/LocalInstallation/MySQLDir:        Location where mysql databases are created (default InstancePath/mysql)
-
-/LocalInstallation/Database/User:                 (default Dirac)
-/LocalInstallation/Database/Password:             (must be set for SystemAdministrator Service to work)
-/LocalInstallation/Database/RootPwd:              (must be set for SystemAdministrator Service to work)
-/LocalInstallation/Database/Host:                 (must be set for SystemAdministrator Service to work)
-/LocalInstallation/Database/MySQLSmallMem:        Configure a MySQL with small memory requirements for testing purposes innodb_buffer_pool_size=200MB
-/LocalInstallation/Database/MySQLLargeMem:        Configure a MySQL with high memory requirements for production purposes innodb_buffer_pool_size=10000MB
+  /DIRAC/Setup:             Setup to be used for any operation
+  /LocalInstallation/InstanceName:    Name of the Instance for the current Setup (default /DIRAC/Setup)
+  /LocalInstallation/LogLevel:        LogLevel set in "run" script for all components installed
+  /LocalInstallation/RootPath:        Used instead of rootPath in "run" script if defined (if links are used to named versions)
+  /LocalInstallation/InstancePath:    Location where runit and startup directories are created (default rootPath)
+  /LocalInstallation/UseVersionsDir:  DIRAC is installed under versions/<Versioned Directory> with a link from pro
+                                      (This option overwrites RootPath and InstancePath)
+  /LocalInstallation/Host:            Used when build the URL to be published for the installed service (default: socket.getfqdn())
+  /LocalInstallation/RunitDir:        Location where runit directory is created (default InstancePath/runit)
+  /LocalInstallation/StartupDir:      Location where startup directory is created (default InstancePath/startup)
+  /LocalInstallation/MySQLDir:        Location where mysql databases are created (default InstancePath/mysql)
+  /LocalInstallation/Database/User:                 (default Dirac)
+  /LocalInstallation/Database/Password:             (must be set for SystemAdministrator Service to work)
+  /LocalInstallation/Database/RootPwd:              (must be set for SystemAdministrator Service to work)
+  /LocalInstallation/Database/Host:                 (must be set for SystemAdministrator Service to work)
+  /LocalInstallation/Database/MySQLSmallMem:        Configure a MySQL with small memory requirements for testing purposes innodb_buffer_pool_size=200MB
+  /LocalInstallation/Database/MySQLLargeMem:        Configure a MySQL with high memory requirements for production purposes innodb_buffer_pool_size=10000MB
 
 The setupSite method (used by the dirac-setup-site command) will use the following info:
 
-/LocalInstallation/Systems:       List of Systems to be defined for this instance in the CS (default: Configuration, Framework)
-/LocalInstallation/Databases:     List of Databases to be installed and configured
-/LocalInstallation/Services:      List of System/ServiceName to be setup
-/LocalInstallation/Agents:        List of System/AgentName to be setup
-/LocalInstallation/WebPortal:     Boolean to setup the Web Portal (default no)
-/LocalInstallation/ConfigurationMaster: Boolean, requires Configuration/Server to be given in the list of Services (default: no)
-/LocalInstallation/PrivateConfiguration: Boolean, requires Configuration/Server to be given in the list of Services (default: no)
+  /LocalInstallation/Systems:       List of Systems to be defined for this instance in the CS (default: Configuration, Framework)
+  /LocalInstallation/Databases:     List of Databases to be installed and configured
+  /LocalInstallation/Services:      List of System/ServiceName to be setup
+  /LocalInstallation/Agents:        List of System/AgentName to be setup
+  /LocalInstallation/WebPortal:     Boolean to setup the Web Portal (default no)
+  /LocalInstallation/ConfigurationMaster: Boolean, requires Configuration/Server to be given in the list of Services (default: no)
+  /LocalInstallation/PrivateConfiguration: Boolean, requires Configuration/Server to be given in the list of Services (default: no)
 
 If a Master Configuration Server is being installed the following Options can be used:
 
-/LocalInstallation/ConfigurationName: Name of the Configuration (default: Setup )
+  /LocalInstallation/ConfigurationName: Name of the Configuration (default: Setup )
+  /LocalInstallation/AdminUserName:  Name of the Admin user (default: None )
+  /LocalInstallation/AdminUserDN:    DN of the Admin user certificate (default: None )
+  /LocalInstallation/AdminUserEmail: Email of the Admin user (default: None )
+  /LocalInstallation/AdminGroupName: Name of the Admin group (default: dirac_admin )
+  /LocalInstallation/HostDN: DN of the host certificate (default: None )
+  /LocalInstallation/VirtualOrganization: Name of the main Virtual Organization (default: None)
 
-/LocalInstallation/AdminUserName:  Name of the Admin user (default: None )
-/LocalInstallation/AdminUserDN:    DN of the Admin user certificate (default: None )
-/LocalInstallation/AdminUserEmail: Email of the Admin user (default: None )
-/LocalInstallation/AdminGroupName: Name of the Admin group (default: dirac_admin )
-
-/LocalInstallation/HostDN: DN of the host certificate (default: None )
-
-/LocalInstallation/VirtualOrganization: Name of the main Virtual Organization (default: None)
 """
 
 __RCSID__ = "$Id$"
@@ -415,7 +410,7 @@ def _getCentralCfg( installCfg ):
   if hostDN:
     hostSection = cfgPath( 'Registry', 'Hosts', host )
     if not centralCfg.isSection( hostSection ):
-       centralCfg.createNewSection( hostSection )
+      centralCfg.createNewSection( hostSection )
     if centralCfg['Registry']['Hosts'][host].existsKey( 'DN' ):
       centralCfg['Registry']['Hosts'][host].deleteKey( 'DN' )
     centralCfg['Registry']['Hosts'][host].addKey( 'DN', hostDN, '' )
@@ -502,7 +497,8 @@ def addDefaultOptionsToCS( gConfig, componentType, systemName,
                            component, extensions, mySetup = setup,
                            specialOptions = {}, overwrite = False,
                            addDefaultOptions = True ):
-  """ Add the section with the component options to the CS
+  """
+  Add the section with the component options to the CS
   """
   system = systemName.replace( 'System', '' )
   instanceOption = cfgPath( 'DIRAC', 'Setups', mySetup, system )
@@ -757,7 +753,8 @@ def printOverallStatus( rDict ):
   return S_OK()
 
 def getAvailableSystems( extensions ):
-  """ Get the list of all systems (in all given extensions) locally available
+  """ 
+  Get the list of all systems (in all given extensions) locally available
   """
   systems = []
 
@@ -770,8 +767,9 @@ def getAvailableSystems( extensions ):
   return systems
 
 def getSoftwareComponents( extensions ):
-  """  Get the list of all the components ( services and agents ) for which the software
-       is installed on the system
+  """  
+  Get the list of all the components ( services and agents ) for which the software
+  is installed on the system
   """
   # The Gateway does not need a handler 
   services = { 'Framework' : ['Gateway'] }
@@ -875,8 +873,9 @@ def getInstalledComponents():
   return S_OK( resultDict )
 
 def getSetupComponents():
-  """  Get the list of all the components ( services and agents ) 
-       set up for running with runsvdir in startup directory 
+  """  
+  Get the list of all the components ( services and agents ) 
+  set up for running with runsvdir in startup directory 
   """
 
   services = {}
@@ -916,8 +915,9 @@ def getSetupComponents():
   return S_OK( resultDict )
 
 def getStartupComponentStatus( componentTupleList ):
-  """  Get the list of all the components ( services and agents ) 
-       set up for running with runsvdir in startup directory 
+  """  
+  Get the list of all the components ( services and agents ) 
+  set up for running with runsvdir in startup directory 
   """
   try:
     if componentTupleList:
@@ -982,7 +982,8 @@ def getStartupComponentStatus( componentTupleList ):
   return S_OK( componentDict )
 
 def getComponentModule( gConfig, system, component, compType ):
-  """ Get the component software module
+  """ 
+  Get the component software module
   """
   setup = CSGlobals.getSetup()
   instance = gConfig.getValue( cfgPath( 'DIRAC', 'Setups', setup, system ), '' )
@@ -994,8 +995,9 @@ def getComponentModule( gConfig, system, component, compType ):
   return S_OK( module )
 
 def getOverallStatus( extensions ):
-  """  Get the list of all the components ( services and agents ) 
-       set up for running with runsvdir in startup directory 
+  """  
+  Get the list of all the components ( services and agents ) 
+  set up for running with runsvdir in startup directory 
   """
 
   result = getSoftwareComponents( extensions )
@@ -1088,8 +1090,9 @@ def getOverallStatus( extensions ):
   return S_OK( resultDict )
 
 def checkComponentModule( componentType, system, module ):
-  """ Check existence of the given module
-      and if it inherits from the proper class
+  """ 
+  Check existence of the given module
+  and if it inherits from the proper class
   """
   if componentType == 'agent':
     loader = ModuleLoader( "Agent", PathFinder.getAgentSection, AgentModule )
@@ -1104,7 +1107,8 @@ def checkComponentModule( componentType, system, module ):
   return loader.loadModule( "%s/%s" % ( system, module ) )
 
 def checkComponentSoftware( componentType, system, component, extensions ):
-  """ Check the component software
+  """ 
+  Check the component software
   """
   result = getSoftwareComponents( extensions )
   if not result['OK']:
@@ -1215,6 +1219,7 @@ def setupSite( scriptCfg, cfg = None ):
   setupAgents = [ k.split( '/' ) for k in localCfg.getOption( cfgInstallPath( 'Agents' ), [] ) ]
   setupExecutors = [ k.split( '/' ) for k in localCfg.getOption( cfgInstallPath( 'Executors' ), [] ) ]
   setupWeb = localCfg.getOption( cfgInstallPath( 'WebPortal' ), False )
+  setupWebApp = localCfg.getOption( cfgInstallPath( 'WebApp' ), False )
   setupConfigurationMaster = localCfg.getOption( cfgInstallPath( 'ConfigurationMaster' ), False )
   setupPrivateConfiguration = localCfg.getOption( cfgInstallPath( 'PrivateConfiguration' ), False )
   setupConfigurationName = localCfg.getOption( cfgInstallPath( 'ConfigurationName' ), setup )
@@ -1471,7 +1476,10 @@ def setupSite( scriptCfg, cfg = None ):
 
   # 7.- And finally the Portal
   if setupWeb:
-    setupPortal()
+    if setupWebApp:
+      setupNewPortal()
+    else:
+      setupPortal()
 
   if localServers != masterServer:
     _addCfgToDiracCfg( initialCfg )
@@ -1513,7 +1521,8 @@ exec svlogd .
 
 
 def installComponent( componentType, system, component, extensions, componentModule = '', checkModule = True ):
-  """ Install runit directory for the specified component
+  """ 
+  Install runit directory for the specified component
   """
   # Check if the component is already installed
   runitCompDir = os.path.join( runitDir, system, component )
@@ -1781,6 +1790,120 @@ def setupPortal():
   # Final check
   return getStartupComponentStatus( [ ( 'Web', 'httpd' ), ( 'Web', 'paster' ) ] )
 
+def setupNewPortal():
+  """
+  Install and create link in startup
+  """
+  result = installNewPortal()
+  if not result['OK']:
+    return result
+
+  # Create the startup entries now
+  runitCompDir = result['Value']
+  startCompDir = os.path.join( startDir, 'Web_WebApp' )
+                    
+
+  if not os.path.exists( startDir ):
+    os.makedirs( startDir )
+  
+  if not os.path.lexists( startCompDir ):
+      gLogger.notice( 'Creating startup link at', startCompDir )
+      os.symlink( runitCompDir, startCompDir )
+      
+  time.sleep( 5 )
+
+  # Check the runsv status
+  start = time.time()
+  while ( time.time() - 10 ) < start:
+    result = getStartupComponentStatus( [( 'Web', 'WebApp' )] )
+    if not result['OK']:
+      return S_ERROR( 'Failed to start the Portal' )
+    if result['Value'] and \
+       result['Value']['%s_%s' % ( 'Web', 'WebApp' )]['RunitStatus'] == "Run":
+      break
+    time.sleep( 1 )
+
+  # Final check
+  return getStartupComponentStatus( [ ('Web', 'WebApp') ] )
+
+def installNewPortal():
+  """
+  Install runit directories for the Web Portal
+  """
+    
+  result = execCommand( False, ["pip", "install", "tornado"] )
+  if not result['OK']:
+    error = "Tornado can not be installed:%s" % result['Value']
+    gLogger.error( error )
+    DIRAC.exit(-1)
+    return error
+  else:
+    gLogger.notice("Tornado has installed suceccfully!")
+    
+  # Check that the software for the Web Portal is installed
+  error = ''
+  webDir = os.path.join( linkedRootPath, 'WebAppDIRAC' )
+  if not os.path.exists( webDir ):
+    error = 'WebApp extension not installed at %s' % webDir
+    if exitOnError:
+      gLogger.error( error )
+      DIRAC.exit( -1 )
+    return S_ERROR( error )
+
+  #compile the JS code
+  prodMode = ""
+  webappCompileScript = os.path.join( linkedRootPath, "WebAppDIRAC/scripts", "dirac-webapp-compile.py" )
+  if os.path.isfile( webappCompileScript ):
+    os.chmod( webappCompileScript , gDefaultPerms )
+    gLogger.notice( "Executing %s..." % webappCompileScript )
+    if os.system( "python '%s' > '%s.out' 2> '%s.err'" % ( webappCompileScript,
+                                                           webappCompileScript,
+                                                           webappCompileScript ) ):
+      gLogger.error( "Compile script %s failed. Check %s.err" % ( webappCompileScript,
+                                                                       webappCompileScript ) )
+    else:
+      prodMode = "-p"
+  
+  # Check if the component is already installed
+  runitWebAppDir = os.path.join( runitDir, 'Web', 'WebApp' )
+
+  # Check if the component is already installed
+  if os.path.exists( runitWebAppDir ):
+    msg = "Web Portal already installed"
+    gLogger.notice( msg )
+  else:
+    gLogger.notice( 'Installing Web Portal' )
+    # Now do the actual installation
+    try:
+      _createRunitLog( runitWebAppDir )
+      runFile = os.path.join( runitWebAppDir, 'run' )
+      fd = open( runFile, 'w' )
+      fd.write( 
+"""#!/bin/bash
+rcfile=%(bashrc)s
+[ -e $rcfile ] && source $rcfile
+#
+exec 2>&1
+#
+exec python %(DIRAC)s/WebAppDIRAC/scripts/dirac-webapp-run.py %(prodMode)s < /dev/null
+""" % {'bashrc': os.path.join( instancePath, 'bashrc' ),
+       'DIRAC': linkedRootPath,
+       'prodMode':prodMode} )
+      fd.close()
+
+      os.chmod( runFile, gDefaultPerms )
+    except Exception:
+      error = 'Failed to prepare setup for Web Portal'
+      gLogger.exception( error )
+      if exitOnError:
+        DIRAC.exit( -1 )
+      return S_ERROR( error )
+
+    result = execCommand( 5, [runFile] )
+    gLogger.notice( result['Value'][1] )
+
+  return S_OK( runitWebAppDir )
+
 def fixMySQLScripts( startupScript = mysqlStartupScript ):
   """
   Edit MySQL scripts to point to desired locations for db and my.cnf
@@ -1880,9 +2003,11 @@ def installMySQL():
   """
   Attempt an installation of MySQL
   mode:
-  - Master
-  - Slave
-  - None
+  
+    -Master
+    -Slave
+    -None
+  
   """
   fixMySQLScripts()
 

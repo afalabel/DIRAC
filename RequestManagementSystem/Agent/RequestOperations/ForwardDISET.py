@@ -23,10 +23,11 @@ __RCSID__ = "$Id $"
 # @brief Definition of ForwardDISET class.
 
 # # imports
-from DIRAC import S_OK, S_ERROR
+from DIRAC import S_OK, S_ERROR, gConfig
 from DIRAC.RequestManagementSystem.private.OperationHandlerBase import OperationHandlerBase
 from DIRAC.Core.DISET.RPCClient import executeRPCStub
 from DIRAC.Core.Utilities import DEncode
+from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
 
 ########################################################################
 class ForwardDISET( OperationHandlerBase ):
@@ -49,13 +50,23 @@ class ForwardDISET( OperationHandlerBase ):
     # # decode arguments
     try:
       decode, length = DEncode.decode( self.operation.Arguments )
+      # FIXME: to be removed when the problem is fixed in the LHCb HLT farm
+      if 'CPUFactor_to_be_replace' in self.operation.Arguments and len( decode ) == 3 and type( decode[2] ) == type( tuple() ):
+        decode = ( decode[0], decode[1], tuple( [x.replace( 'CPUFactor_to_be_replace', '0' ) for x in decode[2]] ) )
       self.log.debug( "decoded len=%s val=%s" % ( length, decode ) )
     except ValueError, error:
       self.log.exception( error )
       self.operation.Error = str( error )
       self.operation.Status = "Failed"
       return S_ERROR( str( error ) )
+
+    # ForwardDiset is supposed to be used with a host certificate
+    useServerCertificate = gConfig.useServerCertificate()
+    gConfigurationData.setOptionInCFG( '/DIRAC/Security/UseServerCertificate', 'true' )
     forward = executeRPCStub( decode )
+    if not useServerCertificate:
+      gConfigurationData.setOptionInCFG( '/DIRAC/Security/UseServerCertificate', 'false' )
+
     if not forward["OK"]:
       self.log.error( "unable to execute '%s' operation: %s" % ( self.operation.Type, forward["Message"] ) )
       self.operation.Error = forward["Message"]

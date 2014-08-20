@@ -1,5 +1,6 @@
 # $HeadURL$
-""" The Grid module contains several utilities for grid operations
+""" 
+The Grid module contains several utilities for grid operations
 """
 __RCSID__ = "$Id$"
 
@@ -11,7 +12,8 @@ from DIRAC.ConfigurationSystem.Client.Helpers         import Local
 from DIRAC import systemCall, shellCall, S_OK, S_ERROR
 
 def executeGridCommand( proxy, cmd, gridEnvScript = None ):
-  """ Execute cmd tuple after sourcing GridEnv
+  """ 
+  Execute cmd tuple after sourcing GridEnv
   """
   currentEnv = dict( os.environ )
 
@@ -64,9 +66,10 @@ def ldapsearchBDII( filt = None, attr = None, host = None, base = None ):
       :return: standard DIRAC answer with Value equals to list of ldapsearch responses
 
       Each element of list is dictionary with keys:
-      - 'dn':                 Distinguished name of ldapsearch response
-      - 'objectClass':        List of classes in response
-      - 'attr':               Dictionary of attributes
+      
+        'dn':                 Distinguished name of ldapsearch response
+        'objectClass':        List of classes in response
+        'attr':               Dictionary of attributes
   """
 
   if filt == None:
